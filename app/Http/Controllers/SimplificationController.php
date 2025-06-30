@@ -352,10 +352,10 @@ class SimplificationController extends Controller
         if ($search) {
             $query->where(function ($q) use ($search) {
                 $q->where('simplified_title', 'like', "%{$search}%")
-                  ->orWhere('cat_story', 'like', "%{$search}%")
-                  ->orWhereHas('document', function ($docQuery) use ($search) {
-                      $docQuery->where('title', 'like', "%{$search}%");
-                  });
+                ->orWhere('cat_story', 'like', "%{$search}%")
+                ->orWhereHas('document', function ($docQuery) use ($search) {
+                    $docQuery->where('title', 'like', "%{$search}%");
+                });
             });
         }
         
@@ -366,7 +366,32 @@ class SimplificationController extends Controller
         
         $favorites = $query->paginate(12)->withQueryString();
         
-        return view('simplifications.favorites', compact('favorites', 'search', 'sort', 'direction'));
+        // Calculate statistics for the view
+        $favoriteSimplifications = $user->favoriteSimplifications();
+        
+        // Calculate average rating for favorites
+        $averageRating = $favoriteSimplifications
+            ->whereNotNull('user_rating')
+            ->avg('user_rating');
+        
+        // Calculate total downloads for favorites
+        $totalDownloads = $favoriteSimplifications
+            ->sum('download_count');
+        
+        // Count public favorites
+        $publicCount = $favoriteSimplifications
+            ->where('is_public', true)
+            ->count();
+        
+        return view('simplifications.favorites', compact(
+            'favorites', 
+            'search', 
+            'sort', 
+            'direction',
+            'averageRating',
+            'totalDownloads',
+            'publicCount'
+        ));
     }
 
     /**

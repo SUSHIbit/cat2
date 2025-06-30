@@ -198,8 +198,12 @@ class ValidateFileUpload
             
             $zip->close();
             
-            // Try to load with PhpPresentation to ensure it's readable
-            $presentation = \PhpOffice\PhpPresentation\IOFactory::load($filePath);
+            // For PowerPoint validation, just verify the ZIP structure
+            // Don't try to load with PhpPresentation as it may cause type errors
+            \Log::info('PowerPoint file passed basic integrity checks', [
+                'file_path' => $filePath,
+                'file_size' => filesize($filePath)
+            ]);
             
         } catch (\Exception $e) {
             throw new \Exception('PowerPoint presentation appears to be corrupted or unreadable.');

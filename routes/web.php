@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SimplificationController;
@@ -21,10 +20,86 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-// Dashboard Route
-Route::get('/dashboard', [DashboardController::class, 'index'])
-    ->middleware(['auth', 'verified'])
-    ->name('dashboard');
+// Dashboard Route - Fixed to work with existing dashboard.blade.php view
+Route::get('/dashboard', function () {
+    $user = auth()->user();
+    
+    // Get recent documents
+    $recentDocuments = $user->documents()
+        ->latest()
+        ->limit(5)
+        ->get();
+    
+    // Get recent simplifications
+    $recentSimplifications = $user->simplifications()
+        ->with('document')
+        ->latest()
+        ->limit(5)
+        ->get();
+    
+    // Get documents currently being processed
+    $documentsInProcessing = $user->documents()
+        ->where('status', 'processing')
+        ->get();
+    
+    // Get simplifications currently being processed
+    $simplificationsInProcessing = $user->simplifications()
+        ->where('status', 'processing')
+        ->get();
+    
+    // Calculate stats
+    $stats = [
+        'total_documents' => $user->documents()->count(),
+        'total_simplifications' => $user->simplifications()->count(),
+        'completed_simplifications' => $user->simplifications()->where('status', 'completed')->count(),
+        'favorites_count' => $user->simplifications()->where('is_favorite', true)->count(),
+        'success_rate' => $user->simplifications()->count() > 0 
+            ? round(($user->simplifications()->where('status', 'completed')->count() / $user->simplifications()->count()) * 100)
+            : 0,
+        'total_file_size' => $user->documents()->sum('file_size') > 0 
+            ? formatBytes($user->documents()->sum('file_size'))
+            : '0 B',
+        'file_types' => $user->documents()
+            ->selectRaw('SUBSTRING_INDEX(mime_type, "/", -1) as type, COUNT(*) as count')
+            ->groupBy('type')
+            ->pluck('count', 'type')
+            ->toArray(),
+        'complexity_levels' => $user->simplifications()
+            ->selectRaw('complexity_level, COUNT(*) as count')
+            ->groupBy('complexity_level')
+            ->pluck('count', 'complexity_level')
+            ->toArray(),
+        'this_month_documents' => $user->documents()
+            ->whereMonth('created_at', now()->month)
+            ->whereYear('created_at', now()->year)
+            ->count(),
+        'this_month_simplifications' => $user->simplifications()
+            ->whereMonth('created_at', now()->month)
+            ->whereYear('created_at', now()->year)
+            ->count(),
+    ];
+    
+    return view('dashboard', compact(
+        'recentDocuments',
+        'recentSimplifications', 
+        'documentsInProcessing',
+        'simplificationsInProcessing',
+        'stats'
+    ));
+})->middleware(['auth', 'verified'])->name('dashboard');
+
+// Helper function for file size formatting
+if (!function_exists('formatBytes')) {
+    function formatBytes($bytes, $precision = 2) {
+        $units = array('B', 'KB', 'MB', 'GB', 'TB');
+        
+        for ($i = 0; $bytes > 1024; $i++) {
+            $bytes /= 1024;
+        }
+        
+        return round($bytes, $precision) . ' ' . $units[$i];
+    }
+}
 
 // Profile Routes
 Route::middleware('auth')->group(function () {
@@ -110,10 +185,6 @@ Route::get('public/simplifications/{shareToken}', [SimplificationController::cla
 
 // API-style routes for AJAX requests
 Route::middleware(['auth', 'verified'])->prefix('api')->group(function () {
-    // Dashboard quick actions
-    Route::get('dashboard/quick-actions', [DashboardController::class, 'quickActions'])
-        ->name('api.dashboard.quick-actions');
-    
     // Document status checks (for real-time updates)
     Route::get('documents/{document}/status', [DocumentController::class, 'status'])
         ->name('api.documents.status')
@@ -145,14 +216,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('simplifications/{simplification}/download', [SimplificationController::class, 'download'])
         ->middleware(['throttle:downloads', 'simplification.ownership'])
         ->name('simplifications.download');
-});
-
-// Administrative routes (if needed in the future)
-Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
-    // These would be protected by additional admin middleware
-    // Route::get('/', [AdminController::class, 'index'])->name('admin.index');
-    // Route::get('documents', [AdminController::class, 'documents'])->name('admin.documents');
-    // Route::get('users', [AdminController::class, 'users'])->name('admin.users');
 });
 
 // Health check and monitoring routes

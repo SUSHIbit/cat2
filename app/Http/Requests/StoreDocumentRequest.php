@@ -36,12 +36,9 @@ class StoreDocumentRequest extends FormRequest
             'file' => [
                 'required',
                 'file',
-                File::types(array_keys($supportedTypes))
-                    ->max($maxFileSize)
-                    ->rules([
-                        'mimes:pdf,docx,pptx',
-                        'mimetypes:application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.presentationml.presentation',
-                    ]),
+                'max:' . $maxFileSize, // Max size in KB
+                'mimes:pdf,docx,pptx',
+                'mimetypes:application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.presentationml.presentation',
             ],
             'title' => [
                 'nullable',
@@ -67,7 +64,6 @@ class StoreDocumentRequest extends FormRequest
         return [
             'file.required' => 'Please select a file to upload.',
             'file.file' => 'The uploaded file is invalid.',
-            'file.types' => 'Only PDF, Word (.docx), and PowerPoint (.pptx) files are supported.',
             'file.max' => "The file size must not exceed {$maxSizeMB}MB.",
             'file.mimes' => 'Invalid file type. Please upload a PDF, Word document, or PowerPoint presentation.',
             'file.mimetypes' => 'Invalid file format detected. Please ensure the file is not corrupted.',
