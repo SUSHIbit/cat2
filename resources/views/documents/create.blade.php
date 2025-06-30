@@ -2,7 +2,7 @@
     <x-slot name="header">
         <div class="flex justify-between items-center">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                📄 Upload Document
+                📄 Upload New Document
             </h2>
             <a href="{{ route('documents.index') }}" class="inline-flex items-center px-4 py-2 bg-gray-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition ease-in-out duration-150">
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -30,7 +30,7 @@
                             <p class="mb-2">🐱 Upload your complex document and our AI will transform it into a simple, engaging cat story!</p>
                             <ul class="list-disc pl-5 space-y-1">
                                 <li>Supported formats: PDF, Word (.docx), PowerPoint (.pptx)</li>
-                                <li>Maximum file size: {{ number_format($maxFileSize / 1024, 0) }}MB</li>
+                                <li>Maximum file size: 10MB</li>
                                 <li>Processing takes 1-3 minutes depending on document length</li>
                                 <li>You can create multiple simplifications with different complexity levels</li>
                             </ul>
@@ -41,7 +41,7 @@
 
             <!-- Upload Form -->
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                <form method="POST" action="{{ route('documents.store') }}" enctype="multipart/form-data" class="p-6">
+                <form method="POST" action="{{ route('documents.store') }}" enctype="multipart/form-data" class="p-6" x-data="documentUpload()">
                     @csrf
 
                     <!-- File Upload Area -->
@@ -50,54 +50,52 @@
                             Document File <span class="text-red-500">*</span>
                         </label>
                         
-                        <div x-data="fileUpload()" class="mt-1">
-                            <div 
-                                @drop.prevent="handleDrop($event)"
-                                @dragover.prevent
-                                @dragenter.prevent
-                                @dragleave.prevent
-                                class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors"
-                                :class="{'border-blue-400 bg-blue-50': isDragging}"
-                            >
-                                <div class="space-y-3">
-                                    <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                                        <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                                    </svg>
-                                    
-                                    <div class="text-sm text-gray-600">
-                                        <label for="file" class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
-                                            <span>Upload a file</span>
-                                            <input 
-                                                id="file" 
-                                                name="file" 
-                                                type="file" 
-                                                class="sr-only"
-                                                accept=".pdf,.docx,.pptx"
-                                                required
-                                                @change="handleFileSelect($event)"
-                                            >
-                                        </label>
-                                        <span class="ml-1">or drag and drop</span>
-                                    </div>
-                                    
-                                    <p class="text-xs text-gray-500">
-                                        PDF, DOCX, PPTX up to {{ number_format($maxFileSize / 1024, 0) }}MB
-                                    </p>
-                                    
-                                    <!-- File Preview -->
-                                    <div x-show="selectedFile" class="mt-4 p-3 bg-gray-50 rounded border">
-                                        <div class="flex items-center">
-                                            <svg class="w-5 h-5 text-gray-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        <div 
+                            @drop.prevent="handleDrop($event)"
+                            @dragover.prevent="isDragging = true"
+                            @dragenter.prevent="isDragging = true"
+                            @dragleave.prevent="isDragging = false"
+                            class="border-2 border-dashed rounded-lg p-6 text-center transition-colors"
+                            :class="isDragging ? 'border-blue-400 bg-blue-50' : 'border-gray-300 hover:border-gray-400'"
+                        >
+                            <div class="space-y-3">
+                                <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
+                                
+                                <div class="text-sm text-gray-600">
+                                    <label for="file" class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                                        <span>Upload a file</span>
+                                        <input 
+                                            id="file" 
+                                            name="file" 
+                                            type="file" 
+                                            class="sr-only"
+                                            accept=".pdf,.docx,.pptx"
+                                            required
+                                            @change="handleFileSelect($event)"
+                                        >
+                                    </label>
+                                    <span class="ml-1">or drag and drop</span>
+                                </div>
+                                
+                                <p class="text-xs text-gray-500">
+                                    PDF, DOCX, PPTX up to 10MB
+                                </p>
+                                
+                                <!-- File Preview -->
+                                <div x-show="selectedFile" class="mt-4 p-3 bg-gray-50 rounded border">
+                                    <div class="flex items-center">
+                                        <svg class="w-5 h-5 text-gray-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                        </svg>
+                                        <span class="text-sm text-gray-700" x-text="selectedFile?.name"></span>
+                                        <span class="text-xs text-gray-500 ml-2" x-text="formatFileSize(selectedFile?.size)"></span>
+                                        <button type="button" @click="clearFile()" class="ml-auto text-red-600 hover:text-red-800">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                                             </svg>
-                                            <span class="text-sm text-gray-700" x-text="selectedFile?.name"></span>
-                                            <span class="text-xs text-gray-500 ml-2" x-text="formatFileSize(selectedFile?.size)"></span>
-                                            <button type="button" @click="clearFile()" class="ml-auto text-red-600 hover:text-red-800">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                                </svg>
-                                            </button>
-                                        </div>
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -145,21 +143,6 @@
                         @enderror
                     </div>
 
-                    <!-- Upload Progress -->
-                    <div x-data="{ uploading: false, progress: 0 }" x-show="uploading" class="mb-6">
-                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                            <div class="flex items-center">
-                                <svg class="w-5 h-5 text-blue-600 animate-spin mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                                </svg>
-                                <span class="text-sm text-blue-800">Uploading document...</span>
-                            </div>
-                            <div class="mt-2 bg-blue-200 rounded-full h-2">
-                                <div class="bg-blue-600 h-2 rounded-full transition-all duration-300" :style="`width: ${progress}%`"></div>
-                            </div>
-                        </div>
-                    </div>
-
                     <!-- Submit Button -->
                     <div class="flex items-center justify-between">
                         <div class="text-sm text-gray-500">
@@ -172,11 +155,12 @@
                             <button 
                                 type="submit" 
                                 class="inline-flex items-center px-6 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 focus:bg-blue-700 active:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150"
+                                :disabled="uploading"
                             >
                                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
                                 </svg>
-                                Upload Document
+                                <span x-text="uploading ? 'Uploading...' : 'Upload Document'"></span>
                             </button>
                         </div>
                     </div>
@@ -261,12 +245,13 @@
         </div>
     </div>
 
-    <!-- Alpine.js File Upload Component -->
+    <!-- Alpine.js Component -->
     <script>
-        function fileUpload() {
+        function documentUpload() {
             return {
                 isDragging: false,
                 selectedFile: null,
+                uploading: false,
                 
                 handleDrop(e) {
                     this.isDragging = false;
@@ -291,9 +276,9 @@
                         return;
                     }
                     
-                    // Validate file size ({{ $maxFileSize }} KB)
-                    if (file.size > {{ $maxFileSize }} * 1024) {
-                        alert('File size must be less than {{ number_format($maxFileSize / 1024, 0) }}MB');
+                    // Validate file size (10MB)
+                    if (file.size > 10 * 1024 * 1024) {
+                        alert('File size must be less than 10MB');
                         return;
                     }
                     
@@ -320,24 +305,5 @@
                 }
             }
         }
-    </script>
-
-    <!-- Form Enhancement Script -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const form = document.querySelector('form');
-            const submitButton = form.querySelector('button[type="submit"]');
-            
-            form.addEventListener('submit', function(e) {
-                // Show uploading state
-                submitButton.disabled = true;
-                submitButton.innerHTML = `
-                    <svg class="w-4 h-4 mr-2 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                    </svg>
-                    Uploading...
-                `;
-            });
-        });
     </script>
 </x-app-layout>
